@@ -3,7 +3,7 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/vandet/laravel-api-response.svg)](https://packagist.org/packages/vandet/laravel-api-response)
 [![CI](https://github.com/vandet/laravel-api-response/actions/workflows/ci.yml/badge.svg)](https://github.com/vandet/laravel-api-response/actions/workflows/ci.yml)
 [![PHP Version](https://img.shields.io/packagist/php-v/vandet/laravel-api-response.svg)](https://packagist.org/packages/vandet/laravel-api-response)
-[![License](https://img.shields.io/packagist/l/vandet/laravel-api-response.svg)](https://packagist.org/packages/vandet/laravel-api-response)
+[![License](https://img.shields.io/github/license/vandet/laravel-api-response.svg)](https://github.com/vandet/laravel-api-response/blob/main/LICENSE)
 
 A Laravel package that enforces a consistent API response envelope — success, paginated, error, and bulk partial failure — so all services speak the same shape without hand-rolling `ResponseFactory` in each one.
 
