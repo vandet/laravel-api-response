@@ -64,7 +64,7 @@ class ResponseFactoryTest extends TestCase
 
     public function test_paginated_returns_200_with_pagination_and_links(): void
     {
-        $items     = [['id' => 1], ['id' => 2]];
+        $items     = array_map(fn ($i) => ['id' => $i], range(1, 20));
         $paginator = new LengthAwarePaginator($items, total: 50, perPage: 20, currentPage: 2);
 
         $response = ResponseFactory::paginated($paginator, 'Users retrieved successfully.');
