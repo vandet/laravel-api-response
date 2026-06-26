@@ -47,6 +47,7 @@ jobs:
             "illuminate/support:^${{ matrix.laravel }}" \
             "illuminate/auth:^${{ matrix.laravel }}" \
             "illuminate/database:^${{ matrix.laravel }}" \
+            "illuminate/pagination:^${{ matrix.laravel }}" \
             "illuminate/validation:^${{ matrix.laravel }}" \
             --no-update --no-interaction
 
