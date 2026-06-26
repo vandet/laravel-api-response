@@ -1,0 +1,9 @@
+# Exclude these from Composer package downloads (composer require / composer install)
+# End users get only src/, config/, and composer.json — nothing else.
+
+/.github/          export-ignore
+/tests/            export-ignore
+RELEASING.md       export-ignore
+release.sh         export-ignore
+.gitignore         export-ignore
+.gitattributes     export-ignore

@@ -1,0 +1,78 @@
+<?php
+
+namespace Vandet\ApiResponse\Constants;
+
+final class ErrorCodes
+{
+    // Authentication & Authorization
+    const AUTH_TOKEN_EXPIRED      = 'AUTH_TOKEN_EXPIRED';
+    const AUTH_TOKEN_INVALID      = 'AUTH_TOKEN_INVALID';
+    const AUTH_TOKEN_MISSING      = 'AUTH_TOKEN_MISSING';
+    const AUTH_USER_UNAUTHORIZED  = 'AUTH_USER_UNAUTHORIZED';
+    const AUTH_USER_FORBIDDEN     = 'AUTH_USER_FORBIDDEN';
+    const AUTH_USER_SUSPENDED     = 'AUTH_USER_SUSPENDED';
+    const AUTH_USER_UNVERIFIED    = 'AUTH_USER_UNVERIFIED';
+    const AUTH_SESSION_EXPIRED    = 'AUTH_SESSION_EXPIRED';
+    const AUTH_MFA_REQUIRED       = 'AUTH_MFA_REQUIRED';
+
+    // Validation
+    const VALIDATION_FAILED       = 'VALIDATION_FAILED';
+
+    // User
+    const USER_NOT_FOUND          = 'USER_NOT_FOUND';
+    const USER_EMAIL_DUPLICATE    = 'USER_EMAIL_DUPLICATE';
+    const USER_EMAIL_INVALID      = 'USER_EMAIL_INVALID';
+    const USER_PASSWORD_WEAK      = 'USER_PASSWORD_WEAK';
+    const USER_ROLE_NOT_FOUND     = 'USER_ROLE_NOT_FOUND';
+
+    // Resource (Generic)
+    const RESOURCE_NOT_FOUND      = 'RESOURCE_NOT_FOUND';
+    const RESOURCE_ALREADY_EXISTS = 'RESOURCE_ALREADY_EXISTS';
+    const RESOURCE_CONFLICT       = 'RESOURCE_CONFLICT';
+    const RESOURCE_LOCKED         = 'RESOURCE_LOCKED';
+
+    // Bulk Operations
+    const BULK_PARTIAL_FAILURE    = 'BULK_PARTIAL_FAILURE';
+    const BULK_ALL_FAILED         = 'BULK_ALL_FAILED';
+    const BULK_LIMIT_EXCEEDED     = 'BULK_LIMIT_EXCEEDED';
+
+    // File & Upload
+    const FILE_TOO_LARGE          = 'FILE_TOO_LARGE';
+    const FILE_TYPE_INVALID       = 'FILE_TYPE_INVALID';
+    const FILE_NOT_FOUND          = 'FILE_NOT_FOUND';
+    const FILE_UPLOAD_FAILED      = 'FILE_UPLOAD_FAILED';
+
+    // Tenant
+    const TENANT_NOT_FOUND        = 'TENANT_NOT_FOUND';
+    const TENANT_SUSPENDED        = 'TENANT_SUSPENDED';
+    const TENANT_MODULE_DISABLED  = 'TENANT_MODULE_DISABLED';
+    const TENANT_PLAN_EXCEEDED    = 'TENANT_PLAN_EXCEEDED';
+
+    // Order
+    const ORDER_NOT_FOUND         = 'ORDER_NOT_FOUND';
+    const ORDER_ALREADY_PAID      = 'ORDER_ALREADY_PAID';
+    const ORDER_CANCELLED         = 'ORDER_CANCELLED';
+    const ORDER_ITEM_OUT_OF_STOCK = 'ORDER_ITEM_OUT_OF_STOCK';
+
+    // Payment
+    const PAYMENT_NOT_FOUND       = 'PAYMENT_NOT_FOUND';
+    const PAYMENT_FAILED          = 'PAYMENT_FAILED';
+    const PAYMENT_DUPLICATE       = 'PAYMENT_DUPLICATE';
+    const PAYMENT_REFUND_FAILED   = 'PAYMENT_REFUND_FAILED';
+    const PAYMENT_METHOD_INVALID  = 'PAYMENT_METHOD_INVALID';
+
+    // API Versioning
+    const API_VERSION_MISSING     = 'API_VERSION_MISSING';
+    const API_VERSION_RETIRED     = 'API_VERSION_RETIRED';
+
+    // Async Jobs
+    const REPORT_GENERATION_FAILED = 'REPORT_GENERATION_FAILED';
+    const IMPORT_PROCESSING_FAILED = 'IMPORT_PROCESSING_FAILED';
+
+    // Server & Infrastructure
+    const SERVER_UNEXPECTED_ERROR  = 'SERVER_UNEXPECTED_ERROR';
+    const SERVER_UNAVAILABLE       = 'SERVER_UNAVAILABLE';
+    const SERVER_RATE_LIMITED      = 'SERVER_RATE_LIMITED';
+    const SERVER_TIMEOUT           = 'SERVER_TIMEOUT';
+    const SERVER_MAINTENANCE       = 'SERVER_MAINTENANCE';
+}
