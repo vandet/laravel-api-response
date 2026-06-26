@@ -8,4 +8,5 @@
 composer.lock
 
 RELEASING.md
+TESTING-WORKFLOWS.md
 release.sh

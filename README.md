@@ -12,17 +12,48 @@ A Laravel package that enforces a consistent API response envelope — success, 
 ## Requirements
 
 - PHP 8.2+
-- Laravel 10 or 11
+- Laravel 10, 11, 12, or 13
 
 ---
 
 ## Installation
+
+### Option 1 — Composer (recommended)
 
 ```bash
 composer require vandet/laravel-api-response
 ```
 
 Laravel auto-discovers the service provider — no manual registration needed.
+
+### Option 2 — Clone the repository
+
+Use this when you want to contribute, customise the source, or install without Packagist.
+
+**1. Clone into your project**
+
+```bash
+git clone https://github.com/vandet/laravel-api-response.git packages/laravel-api-response
+```
+
+**2. Add the local path repository to your `composer.json`**
+
+```json
+"repositories": [
+    {
+        "type": "path",
+        "url": "./packages/laravel-api-response"
+    }
+]
+```
+
+**3. Require the package**
+
+```bash
+composer require vandet/laravel-api-response
+```
+
+Composer symlinks the cloned folder into `vendor/` — any changes you make to the source are reflected immediately without re-running `composer update`.
 
 ### Publish the config (optional)
 
@@ -428,52 +459,8 @@ Optional fields (`pagination`, `links`, `included`, `meta`) are **omitted entire
 
 ```bash
 composer install
-./vendor/bin/pest
+./vendor/bin/phpunit
 ```
-
----
-
-## Releasing a New Version
-
-This package uses GitHub Actions for CI and automated releases.
-
-### How to release
-
-```bash
-# 1. Commit and push all changes to main
-git push origin main
-
-# 2. Tag the release (semver)
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-The release workflow will:
-1. Run the full test matrix (PHP 8.2 + 8.3 × Laravel 10 + 11)
-2. Create a GitHub Release automatically with generated release notes
-3. Mark it as the **latest** release on GitHub
-4. Packagist picks up the new tag via webhook within minutes
-
-### Versioning
-
-This package follows [Semantic Versioning](https://semver.org/):
-
-| Change | Version bump | Example |
-|--------|-------------|---------|
-| Bug fix, patch | Patch | `v1.0.0` → `v1.0.1` |
-| New method, backwards-compatible | Minor | `v1.0.0` → `v1.1.0` |
-| Breaking change (rename, remove) | Major | `v1.0.0` → `v2.0.0` |
-
-### CI matrix
-
-Every push to `main` and every pull request runs tests across:
-
-| PHP | Laravel |
-|-----|---------|
-| 8.2 | 10 |
-| 8.2 | 11 |
-| 8.3 | 10 |
-| 8.3 | 11 |
 
 ---
 

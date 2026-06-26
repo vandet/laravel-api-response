@@ -3,7 +3,8 @@
 
 /.github/          export-ignore
 /tests/            export-ignore
-RELEASING.md       export-ignore
-release.sh         export-ignore
+RELEASING.md          export-ignore
+TESTING-WORKFLOWS.md  export-ignore
+release.sh            export-ignore
 .gitignore         export-ignore
 .gitattributes     export-ignore
