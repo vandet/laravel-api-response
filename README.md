@@ -94,7 +94,11 @@ return ResponseFactory::created($user, 'User created successfully.');
 #### Success — accepted async job (202)
 
 ```php
+// No data (typical for fire-and-forget jobs)
 return ResponseFactory::accepted('Import queued successfully.');
+
+// With tracking info
+return ResponseFactory::accepted('Import queued.', ['job_id' => 'abc-123']);
 ```
 
 #### Success — paginated collection
@@ -168,7 +172,7 @@ if ($validator->fails()) {
 ```php
 use Vandet\ApiResponse\Constants\ErrorCodes;
 
-return ResponseFactory::notFound(ErrorCodes::USER_NOT_FOUND, 'User not found.');
+return ResponseFactory::notFound(ErrorCodes::RESOURCE_NOT_FOUND, 'User not found.');
 ```
 
 #### Unauthorized (401) / Forbidden (403) / Conflict (409)
@@ -176,7 +180,7 @@ return ResponseFactory::notFound(ErrorCodes::USER_NOT_FOUND, 'User not found.');
 ```php
 return ResponseFactory::unauthorized(ErrorCodes::AUTH_TOKEN_EXPIRED, 'Token has expired.');
 return ResponseFactory::forbidden(ErrorCodes::AUTH_USER_FORBIDDEN, 'You do not have permission.');
-return ResponseFactory::conflict(ErrorCodes::USER_EMAIL_DUPLICATE, 'Email already registered.');
+return ResponseFactory::conflict(ErrorCodes::RESOURCE_CONFLICT, 'Email already registered.');
 ```
 
 #### Bulk partial failure (207)
@@ -224,15 +228,18 @@ See [`src/Constants/ErrorCodes.php`](src/Constants/ErrorCodes.php) for the full 
 
 The package automatically intercepts Laravel exceptions on JSON requests and converts them to the standard envelope.
 
-| Exception | HTTP | Code |
-|-----------|------|------|
-| `ValidationException` | 422 | `VALIDATION_FAILED` |
-| `AuthenticationException` | 401 | `AUTH_TOKEN_MISSING` |
-| `AuthorizationException` | 403 | `AUTH_USER_FORBIDDEN` |
-| `ModelNotFoundException` | 404 | `RESOURCE_NOT_FOUND` |
-| `NotFoundHttpException` | 404 | `RESOURCE_NOT_FOUND` |
-| `TooManyRequestsHttpException` | 429 | `SERVER_RATE_LIMITED` |
-| `Throwable` (catch-all) | 500 | `SERVER_UNEXPECTED_ERROR` |
+| Config key | Exception | HTTP | Code |
+|---|---|------|------|
+| `validation` | `ValidationException` | 422 | `VALIDATION_FAILED` |
+| `authentication` | `AuthenticationException` | 401 | `AUTH_TOKEN_MISSING` |
+| `authorization` | `AuthorizationException` | 403 | `AUTH_USER_FORBIDDEN` |
+| `model_not_found` | `ModelNotFoundException` | 404 | `RESOURCE_NOT_FOUND` |
+| `route_not_found` | `NotFoundHttpException` | 404 | `RESOURCE_NOT_FOUND` |
+| `rate_limited` | `TooManyRequestsHttpException` | 429 | `SERVER_RATE_LIMITED` |
+| `http_error` | `HttpException` (503, etc.) | varies | `SERVER_UNAVAILABLE` / `SERVER_UNEXPECTED_ERROR` |
+| `server_error` | `Throwable` (catch-all) | 500 | `SERVER_UNEXPECTED_ERROR` |
+
+`ApiException` and its subclasses are handled via their own `render()` method and do not appear in this table — no config key needed.
 
 Only requests with `Accept: application/json` are intercepted — web/HTML routes are unaffected.
 
@@ -249,12 +256,94 @@ To disable specific exception types:
 
 ```php
 'exceptions' => [
-    'validation'     => true,
-    'authentication' => true,
-    'authorization'  => false, // handle manually
-    'not_found'      => true,
-    'rate_limited'   => true,
-    'server_error'   => true,
+    'validation'      => true,
+    'authentication'  => true,
+    'authorization'   => false,  // handle manually
+    'model_not_found' => true,
+    'route_not_found' => true,
+    'rate_limited'    => true,
+    'http_error'      => true,
+    'server_error'    => true,
+],
+```
+
+### Customizing exception handlers
+
+Each exception type can be replaced with your own class instead of being toggled on/off.
+The config value accepts three forms:
+
+| Value | Behaviour |
+|---|---|
+| `true` | Use the package default (default) |
+| `false` | Skip — Laravel handles it |
+| `'ClassName'` | Use your custom class (resolved via container) |
+
+Your custom class must implement `Vandet\ApiResponse\Contracts\ExceptionHandlerContract`:
+
+```php
+use Illuminate\Http\JsonResponse;
+use Vandet\ApiResponse\Contracts\ExceptionHandlerContract;
+
+interface ExceptionHandlerContract
+{
+    public function handle(\Throwable $e): JsonResponse;
+}
+```
+
+Register custom handlers in `config/api-response.php`:
+
+```php
+'exceptions' => [
+    'validation'      => \App\Exceptions\Handlers\ValidationHandler::class,
+    'authentication'  => \App\Exceptions\Handlers\AuthenticationHandler::class,
+    'authorization'   => \App\Exceptions\Handlers\AuthorizationHandler::class,
+    'model_not_found' => \App\Exceptions\Handlers\ModelNotFoundHandler::class,
+    'route_not_found' => \App\Exceptions\Handlers\RouteNotFoundHandler::class,
+    'rate_limited'    => \App\Exceptions\Handlers\RateLimitedHandler::class,
+    'http_error'      => \App\Exceptions\Handlers\HttpErrorHandler::class,
+    'server_error'    => \App\Exceptions\Handlers\ServerErrorHandler::class,
+],
+```
+
+Publish ready-to-use starting points for all exception types directly into your project:
+
+```bash
+php artisan vendor:publish --tag=api-response-stubs
+```
+
+This creates `app/Exceptions/Handlers/` with one file per exception type. Modify as needed.
+
+**Example — custom validation handler:**
+
+```php
+// app/Exceptions/Handlers/ValidationHandler.php
+
+namespace App\Exceptions\Handlers;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
+use Vandet\ApiResponse\Contracts\ExceptionHandlerContract;
+use Vandet\ApiResponse\Http\ResponseFactory;
+
+class ValidationHandler implements ExceptionHandlerContract
+{
+    public function handle(\Throwable $e): JsonResponse
+    {
+        /** @var ValidationException $e */
+        return ResponseFactory::validationError(
+            $e->errors(),
+            'Please fix the highlighted fields.'
+        );
+    }
+}
+```
+
+**`model_not_found` and `route_not_found` are separate keys** — they can be customized or disabled independently:
+
+```php
+'exceptions' => [
+    'model_not_found' => \App\Exceptions\Handlers\ModelNotFoundHandler::class,
+    'route_not_found' => false,  // let Laravel handle missing routes
 ],
 ```
 
@@ -407,7 +496,7 @@ throw new PaymentFailedException('Card declined.');
 { "success": false, "message": "Card declined.", "code": "PAYMENT_FAILED", "errors": {} }
 ```
 
-No need to register a `renderable()` for each exception type. All classes that extend `ApiException` are caught by the service provider automatically.
+No need to register a `renderable()` for each exception type. Laravel calls `render()` on the exception directly — the package handles it automatically.
 
 #### Generic one-off errors without a custom class
 
@@ -427,7 +516,8 @@ disable the package's version in `config/api-response.php` to avoid conflicts:
 
 ```php
 'exceptions' => [
-    'not_found' => false, // I handle this myself
+    'model_not_found' => false,  // I handle this myself
+    'route_not_found' => false,
 ],
 ```
 
@@ -466,6 +556,7 @@ composer install
 
 ## Changelog
 
-| Version | Date       | Change          |
-|---------|------------|-----------------|
+| Version | Date       | Change |
+|---------|------------|--------|
+| 1.1.0   | 2026-06-30 | Split `not_found` into `model_not_found` / `route_not_found`; `ApiException` self-renders via `render()`; `accepted()` data now optional; removed domain-specific error codes; publishable stubs; `symfony/http-kernel` declared as explicit dependency; integration test suite |
 | 1.0.0   | 2026-06-26 | Initial release |

@@ -8,11 +8,10 @@ use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
-use Vandet\ApiResponse\Exceptions\ApiException;
 use Vandet\ApiResponse\Exceptions\Handler;
-use Vandet\ApiResponse\Http\ResponseFactory;
 
 class ApiResponseServiceProvider extends ServiceProvider
 {
@@ -23,10 +22,20 @@ class ApiResponseServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadTranslationsFrom(__DIR__.'/../lang', 'api-response');
+
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/api-response.php' => config_path('api-response.php'),
             ], 'api-response-config');
+
+            $this->publishes([
+                __DIR__.'/../lang' => lang_path('vendor/api-response'),
+            ], 'api-response-lang');
+
+            $this->publishes([
+                __DIR__.'/../stubs' => app_path('Exceptions/Handlers'),
+            ], 'api-response-stubs');
         }
 
         if (! config('api-response.handle_exceptions', true)) {
@@ -36,55 +45,97 @@ class ApiResponseServiceProvider extends ServiceProvider
         $exceptions = config('api-response.exceptions', []);
         $handler    = $this->app->make(ExceptionHandler::class);
 
-        // Always intercept ApiException — it already carries its own code and status
-        $handler->renderable(function (ApiException $e, $request) {
-            if ($request->expectsJson()) {
-                return ResponseFactory::error($e->getErrorCode(), $e->getMessage(), $e->getStatusCode());
-            }
-        });
+        // Registration order matters: renderable() is LIFO — last registered = first checked.
+        // Broad handlers go first here so specific subclasses (registered after) take precedence.
+        //
+        // Note: ApiException is NOT registered here — it implements render() directly,
+        // so Laravel calls it automatically before consulting these callbacks.
+        //
+        // Each config value supports three states:
+        //   true       → use the package default handler
+        //   false      → skip (do not register — Laravel handles it)
+        //   'ClassName'→ resolve from container and call handle(\Throwable) — must implement ExceptionHandlerContract
 
-        if ($exceptions['validation'] ?? true) {
-            $handler->renderable(function (ValidationException $e, $request) {
+        if (($cfg = $exceptions['server_error'] ?? true) !== false) {
+            $handler->renderable(function (\Throwable $e, $request) use ($cfg) {
                 if ($request->expectsJson()) {
-                    return Handler::handleValidation($e);
+                    return \is_string($cfg)
+                        ? $this->app->make($cfg)->handle($e)
+                        : Handler::handleServerError($e);
                 }
             });
         }
 
-        if ($exceptions['authentication'] ?? true) {
-            $handler->renderable(function (AuthenticationException $e, $request) {
+        if (($cfg = $exceptions['http_error'] ?? true) !== false) {
+            $handler->renderable(function (HttpException $e, $request) use ($cfg) {
                 if ($request->expectsJson()) {
-                    return Handler::handleAuthentication($e);
+                    return \is_string($cfg)
+                        ? $this->app->make($cfg)->handle($e)
+                        : Handler::handleHttpError($e);
                 }
             });
         }
 
-        if ($exceptions['authorization'] ?? true) {
-            $handler->renderable(function (AuthorizationException $e, $request) {
+        if (($cfg = $exceptions['validation'] ?? true) !== false) {
+            $handler->renderable(function (ValidationException $e, $request) use ($cfg) {
                 if ($request->expectsJson()) {
-                    return Handler::handleAuthorization($e);
+                    return \is_string($cfg)
+                        ? $this->app->make($cfg)->handle($e)
+                        : Handler::handleValidation($e);
                 }
             });
         }
 
-        if ($exceptions['not_found'] ?? true) {
-            $handler->renderable(function (ModelNotFoundException $e, $request) {
+        if (($cfg = $exceptions['authentication'] ?? true) !== false) {
+            $handler->renderable(function (AuthenticationException $e, $request) use ($cfg) {
                 if ($request->expectsJson()) {
-                    return Handler::handleModelNotFound($e);
-                }
-            });
-
-            $handler->renderable(function (NotFoundHttpException $e, $request) {
-                if ($request->expectsJson()) {
-                    return Handler::handleNotFound($e);
+                    return \is_string($cfg)
+                        ? $this->app->make($cfg)->handle($e)
+                        : Handler::handleAuthentication($e);
                 }
             });
         }
 
-        if ($exceptions['rate_limited'] ?? true) {
-            $handler->renderable(function (TooManyRequestsHttpException $e, $request) {
+        if (($cfg = $exceptions['authorization'] ?? true) !== false) {
+            $handler->renderable(function (AuthorizationException $e, $request) use ($cfg) {
                 if ($request->expectsJson()) {
-                    return Handler::handleRateLimited($e);
+                    return \is_string($cfg)
+                        ? $this->app->make($cfg)->handle($e)
+                        : Handler::handleAuthorization($e);
+                }
+            });
+        }
+
+        if (($cfg = $exceptions['model_not_found'] ?? true) !== false) {
+            $handler->renderable(function (ModelNotFoundException $e, $request) use ($cfg) {
+                if ($request->expectsJson()) {
+                    return \is_string($cfg)
+                        ? $this->app->make($cfg)->handle($e)
+                        : Handler::handleModelNotFound($e);
+                }
+            });
+        }
+
+        // NotFoundHttpException is an HttpException subclass — must be registered after
+        // the generic HttpException handler so LIFO picks this one first.
+        if (($cfg = $exceptions['route_not_found'] ?? true) !== false) {
+            $handler->renderable(function (NotFoundHttpException $e, $request) use ($cfg) {
+                if ($request->expectsJson()) {
+                    return \is_string($cfg)
+                        ? $this->app->make($cfg)->handle($e)
+                        : Handler::handleNotFound($e);
+                }
+            });
+        }
+
+        // TooManyRequestsHttpException is an HttpException subclass — registered last
+        // so LIFO picks it before the generic HttpException handler.
+        if (($cfg = $exceptions['rate_limited'] ?? true) !== false) {
+            $handler->renderable(function (TooManyRequestsHttpException $e, $request) use ($cfg) {
+                if ($request->expectsJson()) {
+                    return \is_string($cfg)
+                        ? $this->app->make($cfg)->handle($e)
+                        : Handler::handleRateLimited($e);
                 }
             });
         }

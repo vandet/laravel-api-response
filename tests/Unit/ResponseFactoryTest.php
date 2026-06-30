@@ -52,7 +52,7 @@ class ResponseFactoryTest extends TestCase
         $this->assertSame(['id' => 1], $body['data']);
     }
 
-    public function test_accepted_returns_202(): void
+    public function test_accepted_returns_202_without_data_field_by_default(): void
     {
         $response = ResponseFactory::accepted('Import queued successfully.');
 
@@ -60,6 +60,15 @@ class ResponseFactoryTest extends TestCase
         $body = $this->decode($response);
         $this->assertTrue($body['success']);
         $this->assertSame('Import queued successfully.', $body['message']);
+        $this->assertArrayNotHasKey('data', $body);
+    }
+
+    public function test_accepted_includes_data_when_provided(): void
+    {
+        $response = ResponseFactory::accepted('Import queued.', ['job_id' => 'abc-123']);
+
+        $body = $this->decode($response);
+        $this->assertSame(['job_id' => 'abc-123'], $body['data']);
     }
 
     public function test_paginated_returns_200_with_pagination_and_links(): void
@@ -143,13 +152,13 @@ class ResponseFactoryTest extends TestCase
 
     public function test_not_found_returns_404(): void
     {
-        $response = ResponseFactory::notFound(ErrorCodes::USER_NOT_FOUND, 'User not found.');
+        $response = ResponseFactory::notFound(ErrorCodes::RESOURCE_NOT_FOUND, 'User not found.');
 
         $this->assertSame(404, $response->getStatusCode());
         $body    = $this->decode($response);
         $bodyRaw = $this->decodeRaw($response);
         $this->assertFalse($body['success']);
-        $this->assertSame(ErrorCodes::USER_NOT_FOUND, $body['code']);
+        $this->assertSame(ErrorCodes::RESOURCE_NOT_FOUND, $body['code']);
         $this->assertArrayNotHasKey('data', $body);
         $this->assertInstanceOf(stdClass::class, $bodyRaw->errors);
     }
@@ -177,12 +186,12 @@ class ResponseFactoryTest extends TestCase
 
     public function test_conflict_returns_409(): void
     {
-        $response = ResponseFactory::conflict(ErrorCodes::USER_EMAIL_DUPLICATE, 'Email already registered.');
+        $response = ResponseFactory::conflict(ErrorCodes::RESOURCE_CONFLICT, 'Email already registered.');
 
         $this->assertSame(409, $response->getStatusCode());
         $body = $this->decode($response);
         $this->assertFalse($body['success']);
-        $this->assertSame(ErrorCodes::USER_EMAIL_DUPLICATE, $body['code']);
+        $this->assertSame(ErrorCodes::RESOURCE_CONFLICT, $body['code']);
     }
 
     public function test_rate_limited_returns_429(): void
@@ -214,7 +223,7 @@ class ResponseFactoryTest extends TestCase
             'failed'  => 1,
             'items'   => [
                 ['index' => 0, 'success' => true,  'id' => '550e8400'],
-                ['index' => 1, 'success' => false, 'code' => 'USER_EMAIL_DUPLICATE'],
+                ['index' => 1, 'success' => false, 'code' => 'RESOURCE_CONFLICT'],
             ],
         ];
 

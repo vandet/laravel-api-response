@@ -10,6 +10,7 @@ use Illuminate\Translation\Translator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Vandet\ApiResponse\Constants\ErrorCodes;
@@ -102,6 +103,38 @@ class ExceptionHandlerTest extends TestCase
         $this->assertSame(ErrorCodes::SERVER_UNEXPECTED_ERROR, $body['code']);
     }
 
+    public function test_maps_http_503_to_503_with_server_unavailable(): void
+    {
+        $response = Handler::handleHttpError(new HttpException(503, 'Down for maintenance.'));
+
+        $this->assertSame(503, $response->getStatusCode());
+        $body = json_decode($response->getContent(), true);
+        $this->assertFalse($body['success']);
+        $this->assertSame(ErrorCodes::SERVER_UNAVAILABLE, $body['code']);
+        $this->assertSame('Down for maintenance.', $body['message']);
+    }
+
+    public function test_maps_http_503_with_no_message_uses_translation_fallback(): void
+    {
+        $response = Handler::handleHttpError(new HttpException(503));
+
+        $this->assertSame(503, $response->getStatusCode());
+        $body = json_decode($response->getContent(), true);
+        $this->assertSame(ErrorCodes::SERVER_UNAVAILABLE, $body['code']);
+        $this->assertNotEmpty($body['message']);
+    }
+
+    public function test_maps_generic_http_exception_to_its_status_code(): void
+    {
+        $response = Handler::handleHttpError(new HttpException(502, 'Bad gateway.'));
+
+        $this->assertSame(502, $response->getStatusCode());
+        $body = json_decode($response->getContent(), true);
+        $this->assertFalse($body['success']);
+        $this->assertSame(ErrorCodes::SERVER_UNEXPECTED_ERROR, $body['code']);
+        $this->assertSame('Bad gateway.', $body['message']);
+    }
+
     public function test_all_exception_responses_follow_the_standard_envelope(): void
     {
         $responses = [
@@ -112,6 +145,7 @@ class ExceptionHandlerTest extends TestCase
             Handler::handleNotFound(new NotFoundHttpException()),
             Handler::handleRateLimited(new TooManyRequestsHttpException()),
             Handler::handleServerError(new RuntimeException()),
+            Handler::handleHttpError(new HttpException(503)),
         ];
 
         foreach ($responses as $response) {

@@ -2,7 +2,10 @@
 
 namespace Vandet\ApiResponse\Exceptions;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
+use Vandet\ApiResponse\Http\ResponseFactory;
 
 class ApiException extends RuntimeException
 {
@@ -22,5 +25,18 @@ class ApiException extends RuntimeException
     public function getStatusCode(): int
     {
         return $this->statusCode;
+    }
+
+    /**
+     * Laravel calls this automatically for JSON requests — no renderable() registration needed.
+     * Return false to fall through to Laravel's default rendering for non-JSON requests.
+     */
+    public function render(Request $request): JsonResponse|false
+    {
+        if (! $request->expectsJson()) {
+            return false;
+        }
+
+        return ResponseFactory::error($this->errorCode, $this->getMessage(), $this->statusCode);
     }
 }

@@ -27,13 +27,19 @@ class ResponseFactory
         ], 201);
     }
 
-    public static function accepted(string $message): JsonResponse
+    /**
+     * @param mixed $data Optional — pass a job ID, token, or tracking info when available.
+     *                    Omitted entirely from the response when null (typical for fire-and-forget jobs).
+     */
+    public static function accepted(string $message, mixed $data = null): JsonResponse
     {
-        return new JsonResponse([
-            'success' => true,
-            'message' => $message,
-            'data'    => (object) [],
-        ], 202);
+        $body = ['success' => true, 'message' => $message];
+
+        if ($data !== null) {
+            $body['data'] = $data;
+        }
+
+        return new JsonResponse($body, 202);
     }
 
     public static function paginated(LengthAwarePaginator $paginator, string $message): JsonResponse
@@ -74,11 +80,11 @@ class ResponseFactory
         return new Response(null, 204);
     }
 
-    public static function validationError(array $errors, string $message = 'Validation failed.'): JsonResponse
+    public static function validationError(array $errors, ?string $message = null): JsonResponse
     {
         return new JsonResponse([
             'success' => false,
-            'message' => $message,
+            'message' => $message ?? trans('api-response::messages.validation_failed'),
             'code'    => ErrorCodes::VALIDATION_FAILED,
             'errors'  => $errors,
         ], 422);
@@ -124,11 +130,11 @@ class ResponseFactory
         ], 409);
     }
 
-    public static function bulkPartialFailure(array $data, string $message = 'Some items failed.'): JsonResponse
+    public static function bulkPartialFailure(array $data, ?string $message = null): JsonResponse
     {
         return new JsonResponse([
             'success' => false,
-            'message' => $message,
+            'message' => $message ?? trans('api-response::messages.some_items_failed'),
             'code'    => ErrorCodes::BULK_PARTIAL_FAILURE,
             'data'    => $data,
             'errors'  => (object) [],
@@ -145,21 +151,21 @@ class ResponseFactory
         ], $status);
     }
 
-    public static function rateLimited(string $message = 'Too many requests. Please slow down.'): JsonResponse
+    public static function rateLimited(?string $message = null): JsonResponse
     {
         return new JsonResponse([
             'success' => false,
-            'message' => $message,
+            'message' => $message ?? trans('api-response::messages.rate_limited'),
             'code'    => ErrorCodes::SERVER_RATE_LIMITED,
             'errors'  => (object) [],
         ], 429);
     }
 
-    public static function serverError(string $message = 'An unexpected error occurred.'): JsonResponse
+    public static function serverError(?string $message = null): JsonResponse
     {
         return new JsonResponse([
             'success' => false,
-            'message' => $message,
+            'message' => $message ?? trans('api-response::messages.server_error'),
             'code'    => ErrorCodes::SERVER_UNEXPECTED_ERROR,
             'errors'  => (object) [],
         ], 500);
