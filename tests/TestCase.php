@@ -19,9 +19,14 @@ abstract class TestCase extends BaseTestCase
         $loader = new ArrayLoader();
         $loader->addMessages('en', 'api-response', require __DIR__.'/../lang/en/messages.php');
 
+        $translator = new Translator($loader, 'en');
+        $config     = new ConfigRepository(['app' => ['debug' => false]]);
+
         $container = new Container();
-        $container->instance('translator', new Translator($loader, 'en'));
-        $container->instance('config', new ConfigRepository(['app' => ['debug' => false]]));
+        $container->instance('translator', $translator);
+        $container->instance(Translator::class, $translator);
+        $container->instance('config', $config);
+        $container->instance(ConfigRepository::class, $config);
         Container::setInstance($container);
     }
 

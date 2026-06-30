@@ -58,23 +58,27 @@ class ApiResponseServiceProvider extends ServiceProvider
         //   'ClassName'→ resolve from container and call handle(\Throwable) — must implement ExceptionHandlerContract
 
         if (($cfg = $exceptions['server_error'] ?? true) !== false) {
-            $handler->renderable(function (\Throwable $e, $request) use ($cfg) {
+            $handler->renderable(function (\Throwable $e, $request) use ($cfg, $exceptions) {
                 if (! $request->expectsJson()) {
                     return;
                 }
                 if (\is_string($cfg)) {
                     return $this->app->make($cfg)->handle($e);
                 }
-                // HttpException types (4xx/5xx) are handled by the http_error handler below.
-                // Only catch truly unexpected throwables here.
-                if (! ($e instanceof HttpException)) {
-                    return Handler::handleServerError($e);
-                }
+                // Defer to more specific handlers when they are enabled.
+                // These guards ensure correct dispatch regardless of whether
+                // renderable() callbacks are evaluated in FIFO or LIFO order.
+                if ($e instanceof HttpException) return; // → http_error / route_not_found / rate_limited
+                if (($exceptions['validation']      ?? true) !== false && $e instanceof ValidationException)     return;
+                if (($exceptions['authentication']  ?? true) !== false && $e instanceof AuthenticationException) return;
+                if (($exceptions['authorization']   ?? true) !== false && $e instanceof AuthorizationException)  return;
+                if (($exceptions['model_not_found'] ?? true) !== false && $e instanceof ModelNotFoundException)  return;
+                return Handler::handleServerError($e);
             });
         }
 
         if (($cfg = $exceptions['http_error'] ?? true) !== false) {
-            $handler->renderable(function (HttpException $e, $request) use ($cfg) {
+            $handler->renderable(function (HttpException $e, $request) use ($cfg, $exceptions) {
                 if (! $request->expectsJson()) {
                     return;
                 }
@@ -85,6 +89,16 @@ class ApiResponseServiceProvider extends ServiceProvider
                 // handlers below — skip them here so the specific handler takes over.
                 if ($e instanceof NotFoundHttpException || $e instanceof TooManyRequestsHttpException) {
                     return;
+                }
+                // AuthorizationException is converted to HttpException by prepareException()
+                // before renderable callbacks run. Recover the original via getPrevious() so
+                // the authorization handler fires with the correct code (AUTH_USER_FORBIDDEN).
+                $authCfg = $exceptions['authorization'] ?? true;
+                if ($authCfg !== false && $e->getPrevious() instanceof AuthorizationException) {
+                    $original = $e->getPrevious();
+                    return \is_string($authCfg)
+                        ? $this->app->make($authCfg)->handle($original)
+                        : Handler::handleAuthorization($original);
                 }
                 return Handler::handleHttpError($e);
             });
@@ -131,12 +145,23 @@ class ApiResponseServiceProvider extends ServiceProvider
         }
 
         if (($cfg = $exceptions['route_not_found'] ?? true) !== false) {
-            $handler->renderable(function (NotFoundHttpException $e, $request) use ($cfg) {
-                if ($request->expectsJson()) {
-                    return \is_string($cfg)
-                        ? $this->app->make($cfg)->handle($e)
-                        : Handler::handleNotFound($e);
+            $handler->renderable(function (NotFoundHttpException $e, $request) use ($cfg, $exceptions) {
+                if (! $request->expectsJson()) {
+                    return;
                 }
+                // ModelNotFoundException is converted to NotFoundHttpException by prepareException().
+                // Recover the original via getPrevious() so the model_not_found handler fires,
+                // enabling independent config (custom class or disabled) per exception type.
+                $modelCfg = $exceptions['model_not_found'] ?? true;
+                if ($modelCfg !== false && $e->getPrevious() instanceof ModelNotFoundException) {
+                    $original = $e->getPrevious();
+                    return \is_string($modelCfg)
+                        ? $this->app->make($modelCfg)->handle($original)
+                        : Handler::handleModelNotFound($original);
+                }
+                return \is_string($cfg)
+                    ? $this->app->make($cfg)->handle($e)
+                    : Handler::handleNotFound($e);
             });
         }
 

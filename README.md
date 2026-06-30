@@ -213,7 +213,7 @@ All standard error codes are available as constants:
 use Vandet\ApiResponse\Constants\ErrorCodes;
 
 ErrorCodes::AUTH_TOKEN_EXPIRED
-ErrorCodes::USER_NOT_FOUND
+ErrorCodes::RESOURCE_NOT_FOUND
 ErrorCodes::VALIDATION_FAILED
 ErrorCodes::RESOURCE_NOT_FOUND
 ErrorCodes::SERVER_UNEXPECTED_ERROR

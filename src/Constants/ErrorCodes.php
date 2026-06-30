@@ -15,6 +15,13 @@ final class ErrorCodes
     const AUTH_SESSION_EXPIRED    = 'AUTH_SESSION_EXPIRED';
     const AUTH_MFA_REQUIRED       = 'AUTH_MFA_REQUIRED';
 
+	// User-related errors
+	const USER_NOT_FOUND       = 'USER_NOT_FOUND';
+	const USER_EMAIL_DUPLICATE = 'USER_EMAIL_DUPLICATE';
+	const USER_EMAIL_INVALID   = 'USER_EMAIL_INVALID';
+	const USER_PASSWORD_WEAK   = 'USER_PASSWORD_WEAK';
+	const USER_ROLE_NOT_FOUND  = 'USER_ROLE_NOT_FOUND';
+
     // Validation
     const VALIDATION_FAILED       = 'VALIDATION_FAILED';
 
