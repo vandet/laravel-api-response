@@ -552,6 +552,35 @@ composer install
 ./vendor/bin/phpunit
 ```
 
+### Testing against a specific Laravel version
+
+The default `composer install` resolves the latest compatible versions. To test against a specific Laravel version locally, pin the relevant packages before installing:
+
+```bash
+# Laravel 10
+TESTBENCH=8
+composer require "orchestra/testbench:^${TESTBENCH}" "illuminate/http:^10" "illuminate/support:^10" "illuminate/auth:^10" "illuminate/database:^10" "illuminate/pagination:^10" "illuminate/validation:^10" --no-update
+composer update --prefer-dist --no-audit
+
+# Laravel 11
+TESTBENCH=9
+composer require "orchestra/testbench:^${TESTBENCH}" "illuminate/http:^11" ...
+
+# Laravel 12 → TESTBENCH=10  |  Laravel 13 → TESTBENCH=11
+```
+
+The testbench version always equals the Laravel major version minus two (10→8, 11→9, 12→10, 13→11). The CI matrix uses the same arithmetic to pin both together.
+
+### CI matrix
+
+| PHP | Laravel 10 | Laravel 11 | Laravel 12 | Laravel 13 |
+|-----|-----------|-----------|-----------|-----------|
+| 8.2 | ✓ | ✓ | ✓ | — |
+| 8.3 | ✓ | ✓ | ✓ | ✓ |
+| 8.4 | ✓ | ✓ | ✓ | ✓ |
+
+Laravel 13 requires PHP 8.3+ (Orchestra Testbench 11 constraint).
+
 ---
 
 ## Changelog

@@ -42,7 +42,9 @@ jobs:
 
       - name: Pin Laravel version
         run: |
+          TESTBENCH=$(( ${{ matrix.laravel }} - 2 ))
           composer require \
+            "orchestra/testbench:^${TESTBENCH}" \
             "illuminate/http:^${{ matrix.laravel }}" \
             "illuminate/support:^${{ matrix.laravel }}" \
             "illuminate/auth:^${{ matrix.laravel }}" \
