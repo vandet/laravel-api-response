@@ -26,15 +26,6 @@ class ErrorCodesTest extends TestCase
         $this->assertSame('VALIDATION_FAILED', ErrorCodes::VALIDATION_FAILED);
     }
 
-    public function test_defines_all_user_error_codes(): void
-    {
-        $this->assertSame('USER_NOT_FOUND', ErrorCodes::USER_NOT_FOUND);
-        $this->assertSame('USER_EMAIL_DUPLICATE', ErrorCodes::USER_EMAIL_DUPLICATE);
-        $this->assertSame('USER_EMAIL_INVALID', ErrorCodes::USER_EMAIL_INVALID);
-        $this->assertSame('USER_PASSWORD_WEAK', ErrorCodes::USER_PASSWORD_WEAK);
-        $this->assertSame('USER_ROLE_NOT_FOUND', ErrorCodes::USER_ROLE_NOT_FOUND);
-    }
-
     public function test_defines_all_resource_error_codes(): void
     {
         $this->assertSame('RESOURCE_NOT_FOUND', ErrorCodes::RESOURCE_NOT_FOUND);

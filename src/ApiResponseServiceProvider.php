@@ -45,11 +45,12 @@ class ApiResponseServiceProvider extends ServiceProvider
         $exceptions = config('api-response.exceptions', []);
         $handler    = $this->app->make(ExceptionHandler::class);
 
-        // Registration order matters: renderable() is LIFO — last registered = first checked.
-        // Broad handlers go first here so specific subclasses (registered after) take precedence.
+        // Handlers are registered in broad-to-specific order.
+        // server_error and http_error use explicit instanceof guards to defer to the more
+        // specific handlers below, so correct behaviour does not depend on callback ordering.
         //
         // Note: ApiException is NOT registered here — it implements render() directly,
-        // so Laravel calls it automatically before consulting these callbacks.
+        // so Laravel calls it before consulting these callbacks.
         //
         // Each config value supports three states:
         //   true       → use the package default handler
@@ -58,21 +59,34 @@ class ApiResponseServiceProvider extends ServiceProvider
 
         if (($cfg = $exceptions['server_error'] ?? true) !== false) {
             $handler->renderable(function (\Throwable $e, $request) use ($cfg) {
-                if ($request->expectsJson()) {
-                    return \is_string($cfg)
-                        ? $this->app->make($cfg)->handle($e)
-                        : Handler::handleServerError($e);
+                if (! $request->expectsJson()) {
+                    return;
+                }
+                if (\is_string($cfg)) {
+                    return $this->app->make($cfg)->handle($e);
+                }
+                // HttpException types (4xx/5xx) are handled by the http_error handler below.
+                // Only catch truly unexpected throwables here.
+                if (! ($e instanceof HttpException)) {
+                    return Handler::handleServerError($e);
                 }
             });
         }
 
         if (($cfg = $exceptions['http_error'] ?? true) !== false) {
             $handler->renderable(function (HttpException $e, $request) use ($cfg) {
-                if ($request->expectsJson()) {
-                    return \is_string($cfg)
-                        ? $this->app->make($cfg)->handle($e)
-                        : Handler::handleHttpError($e);
+                if (! $request->expectsJson()) {
+                    return;
                 }
+                if (\is_string($cfg)) {
+                    return $this->app->make($cfg)->handle($e);
+                }
+                // NotFoundHttpException and TooManyRequestsHttpException have dedicated
+                // handlers below — skip them here so the specific handler takes over.
+                if ($e instanceof NotFoundHttpException || $e instanceof TooManyRequestsHttpException) {
+                    return;
+                }
+                return Handler::handleHttpError($e);
             });
         }
 
@@ -116,8 +130,6 @@ class ApiResponseServiceProvider extends ServiceProvider
             });
         }
 
-        // NotFoundHttpException is an HttpException subclass — must be registered after
-        // the generic HttpException handler so LIFO picks this one first.
         if (($cfg = $exceptions['route_not_found'] ?? true) !== false) {
             $handler->renderable(function (NotFoundHttpException $e, $request) use ($cfg) {
                 if ($request->expectsJson()) {
@@ -128,8 +140,6 @@ class ApiResponseServiceProvider extends ServiceProvider
             });
         }
 
-        // TooManyRequestsHttpException is an HttpException subclass — registered last
-        // so LIFO picks it before the generic HttpException handler.
         if (($cfg = $exceptions['rate_limited'] ?? true) !== false) {
             $handler->renderable(function (TooManyRequestsHttpException $e, $request) use ($cfg) {
                 if ($request->expectsJson()) {
