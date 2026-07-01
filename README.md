@@ -582,5 +582,5 @@ Laravel 10 and 11 reached end-of-life and are no longer tested. Laravel 13 requi
 
 | Version | Date       | Change |
 |---------|------------|--------|
-| 1.1.0   | 2026-06-30 | Split `not_found` into `model_not_found` / `route_not_found`; `ApiException` self-renders via `render()`; `accepted()` data now optional; removed domain-specific error codes; publishable stubs; `symfony/http-kernel` declared as explicit dependency; integration test suite |
+| 1.1.0   | 2026-07-01 | Split `not_found` into `model_not_found` / `route_not_found`; `ApiException` self-renders via `render()`; `accepted()` data now optional; removed domain-specific error codes; publishable stubs; `symfony/http-kernel` declared as explicit dependency; integration test suite; dropped Laravel 10 and 11 from CI (both EOL) |
 | 1.0.0   | 2026-06-26 | Initial release |
