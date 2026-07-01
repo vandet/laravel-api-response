@@ -12,7 +12,7 @@ A Laravel package that enforces a consistent API response envelope — success, 
 ## Requirements
 
 - PHP 8.2+
-- Laravel 10, 11, 12, or 13
+- Laravel 12 or 13
 
 ---
 
@@ -554,32 +554,27 @@ composer install
 
 ### Testing against a specific Laravel version
 
-The default `composer install` resolves the latest compatible versions. To test against a specific Laravel version locally, pin the relevant packages before installing:
+To test against a specific Laravel version locally, pin the relevant packages before installing:
 
 ```bash
-# Laravel 10
-TESTBENCH=8
-composer require "orchestra/testbench:^${TESTBENCH}" "illuminate/http:^10" "illuminate/support:^10" "illuminate/auth:^10" "illuminate/database:^10" "illuminate/pagination:^10" "illuminate/validation:^10" --no-update
+# Laravel 12
+composer require --dev "orchestra/testbench:^10" "illuminate/http:^12" "illuminate/support:^12" "illuminate/auth:^12" "illuminate/database:^12" "illuminate/pagination:^12" "illuminate/validation:^12" --no-update
 composer update --prefer-dist --no-audit
 
-# Laravel 11
-TESTBENCH=9
-composer require "orchestra/testbench:^${TESTBENCH}" "illuminate/http:^11" ...
-
-# Laravel 12 → TESTBENCH=10  |  Laravel 13 → TESTBENCH=11
+# Laravel 13
+composer require --dev "orchestra/testbench:^11" "illuminate/http:^13" "illuminate/support:^13" "illuminate/auth:^13" "illuminate/database:^13" "illuminate/pagination:^13" "illuminate/validation:^13" --no-update
+composer update --prefer-dist --no-audit
 ```
-
-The testbench version always equals the Laravel major version minus two (10→8, 11→9, 12→10, 13→11). The CI matrix uses the same arithmetic to pin both together.
 
 ### CI matrix
 
-| PHP | Laravel 10 | Laravel 11 | Laravel 12 | Laravel 13 |
-|-----|-----------|-----------|-----------|-----------|
-| 8.2 | ✓ | ✓ | ✓ | — |
-| 8.3 | ✓ | ✓ | ✓ | ✓ |
-| 8.4 | ✓ | ✓ | ✓ | ✓ |
+| PHP | Laravel 12 | Laravel 13 |
+|-----|-----------|-----------|
+| 8.2 | ✓ | — |
+| 8.3 | ✓ | ✓ |
+| 8.4 | ✓ | ✓ |
 
-Laravel 13 requires PHP 8.3+ (Orchestra Testbench 11 constraint).
+Laravel 10 and 11 reached end-of-life and are no longer tested. Laravel 13 requires PHP 8.3+.
 
 ---
 
